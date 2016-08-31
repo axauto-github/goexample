@@ -1,0 +1,48 @@
+---
+type: service_template
+subtype: container
+name: golang-example-base
+description: golang example base container
+container:
+  resources:
+    mem_mib: 256 
+    cpu_cores: 0.1 
+    disk_gb: 0
+  image: "docker.local/golang:1.6"
+  docker_options: ''
+  command: "%%CMD%%"
+inputs:
+  artifacts:
+  - from: "%%service.checkout_id.code%%"
+    path: "/src"
+  parameters:
+    CMD: {}
+outputs:
+  artifacts:
+    code:
+      path: "/src"
+
+---
+type: service_template
+subtype: workflow
+name: golang-example
+description: golang example workflow
+inputs:
+  parameters:
+    commit:
+      default: "%%session.commit%%"
+    repo:
+      default: "%%session.repo%%"
+steps:
+- checkout:
+    template: axcheckout
+- build:
+    template: golang-example-base
+    parameters:
+      CMD: "sh -c 'cd /src && go build main.go'"
+      checkout_id: "%%service.checkout.id%%"
+  test:
+    template: golang-example-base
+    parameters:
+      CMD: "sh -c 'cd /src && go test -v'"
+      checkout_id: "%%service.checkout.id%%"
